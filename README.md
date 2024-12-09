@@ -3,6 +3,7 @@ Create mathematical optimization models and code using LLM's!
 
 ## Overview
 This web application is for formulating and coding  Mixed Integer and Linear Problems with the use of a Large Language Model. 
+![alt text](https://github.com/retrorecon/or-llm/blob/main/or-llm-sample-usage.png?raw=true)
 
 ## Features
 The chat window is intended for discussing back and forth with an LLM agent. As the user explains their problem, the agent creates appropriate MILP model formulations. 
