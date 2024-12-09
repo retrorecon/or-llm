@@ -28,9 +28,14 @@ st.title("OR-LLM")
 st.subheader("Develop mathematical optimization models and code with LLMs!")
 
 # LLM Picking point
-llm_provider = st.sidebar.selectbox("Choose LLM Provider:", ["OpenAI", "Gemini"])
+llm_provider = st.sidebar.selectbox("Choose LLM Provider:", ["Gemini", "OpenAI"])
 llm_dict = {"OpenAI": "openai", "Gemini":"gemini"}
-# selected_page = st.sidebar.text_input("API Key:", type="password")
+api_key = st.sidebar.text_input("API Key:", type="password", placeholder='Leave empty to use key in .env')
+if api_key:
+    if llm_provider == 'OpenAI':
+        openai_key = api_key
+    if llm_provider == 'Gemini':
+        gemini_key = api_key
 
 
 col1, col2, col3 = st.columns([1, 1, 1])
@@ -38,7 +43,7 @@ col1, col2, col3 = st.columns([1, 1, 1])
 # Column 1: Chat Section
 with col1:
     st.header("Chat")
-    chat_container = st.container(height=400)
+    chat_container = st.container(height=800)
     with chat_container:
         for message in st.session_state["chat_history"]:
             with st.chat_message(message["role"]):
@@ -64,10 +69,10 @@ with col1:
                 inputs["llm"] = llm_dict[llm_provider]
                 result = app.invoke(inputs)
                 st.session_state["agent_history"] = result # Save the agent state.
-                for i in range(len(st.session_state["chat_history"]), len(result['messages'])):
+                for i in range(len(st.session_state["chat_history"])+1, len(result['messages'])):
                     st.markdown(result['messages'][i].content)
 
-        for i in range(len(st.session_state["chat_history"]), len(result['messages'])):
+        for i in range(len(st.session_state["chat_history"])+1, len(result['messages'])):
             st.session_state.chat_history.append({"role": "assistant", "content": result['messages'][i].content})
         if "code" in result:
             st.session_state["code_content"] = result["code"]

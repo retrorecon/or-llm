@@ -45,7 +45,7 @@ def primary_agent(state: AgentState):
     # TODO: I don't know if making this a seperate message hurts the process. I might consider combining it with the last message.
     prompt = [] # This is the auxilarry prompt to pass the model in the user's system into the chat, if there is one.
     if 'mathmod' in state:
-        prefix = f"Here is my current model"
+        prefix = f"Here is my current model. If my question is not related to changing my model, just ignore the model and reply to my question."
         last_model = state['mathmod']
         prompt = [HumanMessage(content=f"\n{prefix}\n{last_model}")]
 
@@ -53,8 +53,14 @@ def primary_agent(state: AgentState):
     request = llm.invoke(state['messages'] + prompt)
 
     # Construct the json
-    request_text = request.content[8:-4] # Remove  ```json ... ``` headers
-    request_json = json.loads(request_text)
+    if request.content[:8] ==  '```json\n':
+        request_text = request.content[8:-4] # Remove  ```json ... ``` headers
+    else:
+        request_text = request.content
+    try:
+        request_json = json.loads(request_text)
+    except:
+        request_json = {'messages': request_text}
 
     # If the result has a mathematical model, construct the code for it.
 
@@ -63,9 +69,10 @@ def primary_agent(state: AgentState):
     msg = []
     msg.extend([AIMessage(content=f"{_msg}") for _msg in request_json["messages"]])
     if 'mathmod' in request_json:
-        state["mathmod"] = request_json["mathmod"]
-        msg.append(AIMessage(content=f"Let me (re)build the code of your mathematical model!"))
-        mode =  "coding"
+        if request_json['mathmod'] != {}:
+            state["mathmod"] = request_json["mathmod"]
+            # msg.append(AIMessage(content=f"Let me (re)build the code of your mathematical model!"))
+            mode =  "coding"
     
 
     state["messages"].extend(msg)
@@ -78,7 +85,7 @@ def coding_agent(state: AgentState):
     Coding agent that constructs the Python code
     """
 
-    llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash", api_key=secrets["API_KEY"])
+    llm = LLM_CONS[state['llm']](**LLM_PARAMS[state['llm']])
 
     # Process the code conversion request.
     
@@ -86,7 +93,7 @@ def coding_agent(state: AgentState):
     code = state.get('code')
     _prompt = {'mathmod': state['mathmod']}
     if code is not None:
-        _prompt['code'] = code
+        _prompt['code'] = "```python\n" + code + "\n```"
     prompt = HumanMessage(content=f"{_prompt}")
     
     request = llm.invoke([sys_prompt, prompt])
